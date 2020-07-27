@@ -7,62 +7,85 @@ Created on Mon Jul 27 03:32:12 2020
 import os
 import json
 from PIL import Image
+import argparse
+import pathlib
+import shutil
 
+parser = argparse.ArgumentParser(description="Convert the ODGT annotations to COCO format")
+parser.add_argument("--datadir", default="Pedestron/datasets/CrowdHuman", 
+                    help="The directory where CrowdHuman dataset is saved."
+                    "Expected to contain: \n "
+                    "- Images/all_train_images.jpg \n"
+                    "- Images_val/all_val_images.jpg \n"
+                    "- annotations/annotations*.odgt")
+parser.add_argument("--debug-size", default=100,
+                    help="The number of images to use in the debug dataset")
+parser.add_argument("--savedir", default="Pedestron/datasets/CrowdHuman_debug",
+                    help="Te directory where debug dataset should be saved")
 
-DEBUG_SIZE = 100
+def make_parent(path: pathlib.Path):
+    parent = path.parent
+    if parent.exists() and parent.is_dir():
+        return
+    else:
+        parent.mkdir(parents=True, exist_ok=True)
 
-def load_file(fpath):
-    assert os.path.exists(fpath)  # assert() raise-if-not
-    with open(fpath, 'r') as fid:
-        lines = fid.readlines()
-    records = [json.loads(line.strip('\n')) for line in lines]  # str to list
-    return records
-
-
-def crowdhuman2coco(odgt_path, json_path):
-    records = load_file(odgt_path)
-    json_dict = {"images": [], "annotations": [], "categories": []}  
-    START_B_BOX_ID = 1  
-    image_id = 1  
-    bbox_id = START_B_BOX_ID
-    image = {}  
-    annotation = {}  
-    categories = {}  
-    print(DEBUG_SIZE)
+def make_debug(data_dir:    pathlib.Path,
+               save_dir:    pathlib.Path,
+               debug_size:  int,
+               split:       str="train"):
+    assert split in ["train", "val"]
+    json_path = pathlib.Path("annotations") / f"{split}.json"
+    with open(data_dir / json_path, 'r') as jsonfile:
+        json_dict = json.load(jsonfile)
     
-    for i in range(DEBUG_SIZE):
-        file_name = records[i]['ID'] + '.jpg'  
-        print(f"Processing file {file_name}...")
-        im = Image.open("../../../datasets/CrowdHuman/Images_val/" + file_name)
-        image = {'file_name': file_name, 'height': im.size[1], 'width': im.size[0],
-                 'id': image_id}  
-        json_dict['images'].append(image)  
+    img_dir = "Images" if split == "train" else "Images_val"
+    # Copy the images over
+    images = json_dict['images'][:debug_size]
+    print(f"Creating a debug {split} dataset of size {debug_size}")
+    
+    for img in images:
+        # Copy the image file
+        img_path = data_dir / img_dir / img['file_name']
+        img_savepath = save_dir / img_dir / img['file_name']
+        print(f"Copying {img_path} to {img_savepath}")
+        image = Image.open(str(img_path))
+        make_parent(img_savepath)
+        image.save(str(img_savepath), "JPEG")
+    img_ids = [image['id'] for image in images]
+    
+    assert len(img_ids) == debug_size
+    for idx in img_ids:
+        # img_id is 1-indexed
+        assert 1 <= idx <= debug_size
+    
+    # Select relevant annotations
+    annotations = []
+    for ann in json_dict['annotations']:
+        if ann['image_id'] < debug_size:
+            annotations.append(ann)
+    
+    # Create new json dict
+    new_json_dict = {'images': images, 
+                     'annotations': annotations,
+                     'categories': json_dict['categories']}
+    json_savepath = save_dir / json_path
+    print(f"Saving annotations to {json_savepath}")
+    make_parent(json_savepath)
+    with open(json_savepath, 'w') as jsonfile:
+        json.dump(new_json_dict, jsonfile)
+    
 
-        gt_box = records[i]['gtboxes']
-        gt_box_len = len(gt_box)  
-        for j in range(gt_box_len):
-            category = gt_box[j]['tag']
-            if category not in categories:  
-                new_id = len(categories) + 1  
-                categories[category] = new_id
-            category_id = categories[category]  
-            fbox = gt_box[j]['fbox']  
-            ignore = 0  
-            if "ignore" in gt_box[j]['head_attr']:
-                ignore = gt_box[j]['head_attr']['ignore']
-            if "ignore" in gt_box[j]['extra']:
-                ignore = gt_box[j]['extra']['ignore']
-            
-            annotation = {'area': fbox[2] * fbox[3], 'iscrowd': ignore, 'image_id':  
-                image_id, 'bbox': fbox, 'hbox': gt_box[j]['hbox'], 'vbox': gt_box[j]['vbox'],
-                          'category_id': category_id, 'id': bbox_id, 'ignore': ignore}
-            json_dict['annotations'].append(annotation)
+def main():
+    args = parser.parse_args()
+    make_debug(pathlib.Path(args.datadir), pathlib.Path(args.savedir), args.debug_size, split="train")
+    make_debug(pathlib.Path(args.datadir), pathlib.Path(args.savedir), args.debug_size, split="val")
+    
+if __name__ == "__main__":
+    main()
+    
 
-            bbox_id += 1  
-        image_id += 1  
-    for cate, cid in categories.items():
-        cat = {'supercategory': 'none', 'id': cid, 'name': cate}
-        json_dict['categories'].append(cat)
         
-    with open(json_path, 'w') as json_fp:
-        json.dump(json_dict, json_fp)
+    
+
+    

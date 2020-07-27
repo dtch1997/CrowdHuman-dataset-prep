@@ -1,7 +1,15 @@
 import os
 import json
 from PIL import Image
+import argparse
+import pathlib
 
+parser = argparse.ArgumentParser(description="Convert the ODGT annotations to COCO format")
+parser.add_argument("--datadir", default="Pedestron/datasets/CrowdHuman", 
+                    help="The directory where CrowdHuman dataset is saved."
+                    "Expected to contain: annotations/annotations*.odgt")
+parser.add_argument("--overwrite", action="store_true"
+                    help="If set, overwrites any existing files in the datadir")
 
 def load_file(fpath):
     assert os.path.exists(fpath)  # assert() raise-if-not
@@ -10,9 +18,7 @@ def load_file(fpath):
     records = [json.loads(line.strip('\n')) for line in lines]  # str to list
     return records
 
-
-
-def crowdhuman2coco(odgt_path, json_path):
+def crowdhuman2coco(odgt_path, json_path, img_dir):
     records = load_file(odgt_path)
     json_dict = {"images": [], "annotations": [], "categories": []}  
     START_B_BOX_ID = 1  
@@ -22,12 +28,12 @@ def crowdhuman2coco(odgt_path, json_path):
     annotation = {}  
     categories = {}  
     record_list = len(records)  
-    print(record_list)
+    print(f"Converting annotations of {record_list} images...")
     
     for i in range(record_list):
         file_name = records[i]['ID'] + '.jpg'  
         print(f"Processing file {file_name}...")
-        im = Image.open("../../../datasets/CrowdHuman/Images_val/" + file_name)
+        im = Image.open(str(img_dir / file_name))
         image = {'file_name': file_name, 'height': im.size[1], 'width': im.size[0],
                  'id': image_id}  
         json_dict['images'].append(image)  
@@ -63,7 +69,14 @@ def crowdhuman2coco(odgt_path, json_path):
 
 
 if __name__ == '__main__':
-    odgt_path = '../../../datasets/CrowdHuman/annotations/annotation_val.odgt'
-    print(os.path.abspath(odgt_path))
-    json_path = '../../../datasets/CrowdHuman/annotations/val.json'
-    crowdhuman2coco(odgt_path, json_path)
+    args = parser.parse_args()
+    train_odgt_path = pathlib.Path(args.datadir) / 'annotations' / 'annotation_train.odgt'
+    train_json_path = pathlib.Path(args.datadir) / 'annotations' / 'train.json'
+    train_img_dir = pathlib.Path(args.datadir) / 'Images'
+    crowdhuman2coco(train_odgt_path, train_json_path, train_img_dir)
+    
+    val_odgt_path = pathlib.Path(args.datadir) / 'annotations' / 'annotation_val.odgt'
+    val_json_path = pathlib.Path(args.datadir) / 'annotations' / 'val.json'
+    val_img_dir = pathlib.Path(args.datadir) / 'Images_val'
+    crowdhuman2coco(val_odgt_path, val_json_path, val_img_dir)
+    
