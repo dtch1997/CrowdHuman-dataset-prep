@@ -62,7 +62,7 @@ def make_debug(data_dir:    pathlib.Path,
     # Select relevant annotations
     annotations = []
     for ann in json_dict['annotations']:
-        if ann['image_id'] < debug_size:
+        if ann['image_id'] <= debug_size:
             annotations.append(ann)
     
     # Create new json dict
