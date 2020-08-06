@@ -15,3 +15,4 @@ rm -rf $DATADIR/val
 
 mkdir $DATADIR/annotations
 mv $DATADIR/*.odgt $DATADIR/annotations
+rm -rf $DATADIR/*.zip
