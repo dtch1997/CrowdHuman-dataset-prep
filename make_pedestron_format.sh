@@ -16,3 +16,4 @@ rm -rf $DATADIR/*.zip
 
 mkdir $DATADIR/annotations
 mv $DATADIR/*.odgt $DATADIR/annotations
+rm -rf $DATADIR/*.zip
