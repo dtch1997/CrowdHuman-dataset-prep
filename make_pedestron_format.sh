@@ -12,6 +12,7 @@ done
 unzip $DATADIR/CrowdHuman_val.zip -d $DATADIR/val
 mv $DATADIR/val/Images $DATADIR/Images_val
 rm -rf $DATADIR/val
+rm -rf $DATADIR/*.zip
 
 mkdir $DATADIR/annotations
 mv $DATADIR/*.odgt $DATADIR/annotations
