@@ -15,21 +15,22 @@ FAQ:
 """
 
 import time
-import gdown
+import os
 import argparse
 import pathlib
 
 parser = argparse.ArgumentParser(description="Download CrowdHuman dataset from Google Drive")
 parser.add_argument("--datadir", default="Pedestron/datasets/CrowdHuman")
+parser.add_argument("--service-account", default="cred.json")
 
 GDRIVE_FILE_IDS = {
-    'CrowdHuman_train_01.zip': '1XZm5L27eQasrvMq008l6vW8I8ysnavSM',
-    'CrowdHuman_train_02.zip': '1KgreKkhPfIiZHkl-x5K7p5LHKsfZss5q',
-    'CrowdHuman_train_03.zip': '1Af1rBvQSxOmXphoNNtKzAJyrEeeAF-aV',
-    'CrowdHuman_val.zip': '1dRRL6eKE1v_1Kb_R8nZGhTQ0HzYZ-Pss',
-    'CrowdHuman_test.zip': '1GYzUB07J35P5Y_DJCwLzJt72x_Mkf9Yl',
-    'annotation_train.odgt': '1uBB3psTLteVEP2Wg466DsYVx1eV8LacU',
-    'annotation_val.odgt': '151-MHsdCni1izANEuZA3q3Pp7Jwpi-PX'
+    'CrowdHuman_train_01.zip': '10JWSJs-bfRIccCwSSpwZDKo2fmBZQD-k',
+    'CrowdHuman_train_02.zip': '1LXYNBLh0s3d37h7NNi-GI72lYKPr06BR',
+    'CrowdHuman_train_03.zip': '1zNJDsXZy7seY9iPzbcjgHyRp_eCLM63m',
+    'CrowdHuman_val.zip': '1x6B7TlWO8yhAA_zAgTBV83MjkImA3GKR',
+    # 'CrowdHuman_test.zip': '1GYzUB07J35P5Y_DJCwLzJt72x_Mkf9Yl',
+    'annotation_train.odgt': '1A7FhvTf9M8R7lzgWganFUPSwcuAQNfbT',
+    'annotation_val.odgt': '1U1K2Q1-iVwzOPImTMtSkngYGKSe13OsJ'
 }
 
 def main():
@@ -37,10 +38,7 @@ def main():
     for fname, fid in GDRIVE_FILE_IDS.items():
         path = pathlib.Path(args.datadir) / fname
         print(f"Downloading file {fname} to {path}")
-        url = f'https://drive.google.com/uc?id={fid}'
-        gdown.download(url, str(path), quiet=False)    
-        # It seems that Google drive will block the automatic download if it occurs too quickly. 
-        time.sleep(10)
+        os.system(f"gdrive --service-account {args.service_account} download {fid}")
     
 if __name__ == "__main__":
     main()

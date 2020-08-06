@@ -1,4 +1,8 @@
-DATADIR="Pedestron/datasets/CrowdHuman"
+
+USAGE = "source make_pedestron_format.sh DATADIR"
+echo $USAGE
+DATADIR=$1
+echo "Using DATADIR=${DATADIR}"
 
 for ZIPFILE in $DATADIR/CrowdHuman_train*.zip
 do
